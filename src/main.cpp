@@ -26,15 +26,14 @@ public:
 
 int main(int argc,char** argv){
     using namespace GSLAM;
-    Messenger  messenger;
     ObjectCaller caller;
-    Publisher  pubInt=messenger.advertise<int>("int",2);
-    Subscriber subInt=messenger.subscribe("int",0,receiveInt);
-    Subscriber subInt1=messenger.subscribe("int",1,&ObjectCaller::receiveInt,&caller);
+    Publisher  pubInt=Messenger::instance().advertise<int>("int",2);
+    Subscriber subInt=Messenger::instance().subscribe("int",0,receiveInt);
+    Subscriber subInt1=Messenger::instance().subscribe("int",1,&ObjectCaller::receiveInt,&caller);
 
 
-    Publisher  pubString=messenger.advertise<std::string>("string");
-    Subscriber subString=messenger.subscribe("string",0,&ObjectCaller::receiveString,&caller);
+    Publisher  pubString=Messenger::instance().advertise<std::string>("string");
+    Subscriber subString=Messenger::instance().subscribe("string",0,&ObjectCaller::receiveString,&caller);
 
     pubInt.publish(100);
     pubString.publish(std::string("hello world"));

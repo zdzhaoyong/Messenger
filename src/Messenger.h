@@ -310,7 +310,13 @@ class Publisher {
 
 class Messenger {
  public:
+    Messenger():d(new Data()){}
   virtual ~Messenger() {}
+
+  static Messenger& instance(){
+      static std::shared_ptr<Messenger> inst(new Messenger());
+      return *inst;
+  }
 
   template <class M>
   Publisher advertise(const std::string& topic, uint32_t queue_size = 0,
@@ -318,8 +324,8 @@ class Messenger {
     Publisher pub(new Publisher::Impl(topic, std::string(typeid(M).name()),
                                       this, queue_size));
     {
-      std::unique_lock<std::mutex> lock(mutex_);
-      publishers_[topic].push_back(pub);
+      std::unique_lock<std::mutex> lock(d->mutex_);
+      d->publishers_[topic].push_back(pub);
     }
     findSubscriber(pub.impl_);
     return pub;
@@ -333,8 +339,8 @@ class Messenger {
                                         *(Subscriber::CallBackFunc*)(&callback),
                                         queue_size));
     {
-      std::unique_lock<std::mutex> lock(mutex_);
-      subscribers_[topic].push_back(sub);
+      std::unique_lock<std::mutex> lock(d->mutex_);
+      d->subscribers_[topic].push_back(sub);
     }
     findPublisher(sub);
     return sub;
@@ -356,9 +362,9 @@ class Messenger {
   }
 
   bool findSubscriber(const std::shared_ptr<Publisher::Impl>& pub) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    auto it = subscribers_.find(pub->topic_);
-    if (it == subscribers_.end()) return false;
+    std::unique_lock<std::mutex> lock(d->mutex_);
+    auto it = d->subscribers_.find(pub->topic_);
+    if (it == d->subscribers_.end()) return false;
     {
       std::unique_lock<std::mutex> lock(pub->mutex_);
       pub->subscribers = it->second;
@@ -367,10 +373,10 @@ class Messenger {
   }
 
   bool findPublisher(Subscriber& sub) {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(d->mutex_);
     if (!sub) return false;
-    auto it = publishers_.find(sub.getTopic());
-    if (it == publishers_.end()) return false;
+    auto it = d->publishers_.find(sub.getTopic());
+    if (it == d->publishers_.end()) return false;
 
     {
       std::unique_lock<std::mutex> lock(sub.impl_->mutex_);
@@ -384,9 +390,12 @@ class Messenger {
   }
 
  private:
-  std::mutex mutex_;
-  std::map<std::string, std::vector<Publisher> > publishers_;
-  std::map<std::string, std::vector<Subscriber> > subscribers_;
+  struct Data{
+      std::mutex mutex_;
+      std::map<std::string, std::vector<Publisher> > publishers_;
+      std::map<std::string, std::vector<Subscriber> > subscribers_;
+  };
+  std::shared_ptr<Data> d;
 };
 
 template <typename M>
