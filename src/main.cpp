@@ -76,10 +76,11 @@ int main(int argc,char** argv){
 
 
     Subscriber subString=Messenger::instance().subscribe("string",0,&ObjectCaller::receiveString,&caller);
-    Subscriber subString1=Messenger::instance().subscribe("string",0,&ObjectCaller::receiveStringPtr,&caller);
+//    Subscriber subString1=Messenger::instance().subscribe("string",0,&ObjectCaller::receiveStringPtr,&caller);
     Publisher  pubString=Messenger::instance().advertise<std::string>("string");
 
     pubInt.publish(100);
+
     pubString.publish(std::string("hello world"));
     pubString.publish(std::shared_ptr<std::string>(new std::string("hello again")));
 
@@ -91,5 +92,7 @@ int main(int argc,char** argv){
     std::this_thread::sleep_for(std::chrono::duration<double>(1));
 
     testROS();
+    subString.shutdown();
+    std::cout<<Messenger::instance().introduction();
     return 0;
 }
